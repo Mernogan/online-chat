@@ -83,4 +83,4 @@ app.add_url_rule('/', 'webio_view', webio_view(main),methods=['GET','POST'])
 
 if __name__ == "__main__":
     start_server(main, debug=False)
-    #app.run(debug=False)
+    app.run(debug=False)
