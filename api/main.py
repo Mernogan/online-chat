@@ -1,10 +1,9 @@
 import asyncio
 from flask import Flask
 from pywebio.platform.flask import webio_view
-from pywebio import start_server
 from pywebio.input import *
 from pywebio.output import *
-from pywebio.session import defer_call, info as session_info, run_async, run_js, set_env
+from pywebio.session import run_async, set_env
 
 app = Flask(__name__)
 app.secret_key = '\x17\xdd\x86/\x023\xe2\x14\x15\x9c\x891\x8a\x81a\x8dO\x1b\xb6\x84\xf6\xd4'
@@ -45,7 +44,13 @@ async def main():
             chat_msgs.append((nickname, data['msg']))
 
     finally:
-        refresh_task.close()
+        # Cancel the refresh task
+        refresh_task.cancel()
+        try:
+            await refresh_task  # Await cancellation
+        except asyncio.CancelledError:
+            pass  # Handle the cancellation gracefully
+
         online_users.remove(nickname)
         toast("Вы покинули чат")
         msg_box.append(put_markdown(f'Пользователь `{nickname}` покинул чат!'))
@@ -64,7 +69,7 @@ async def refresh_msg(nickname, msg_box):
             if m[0] != nickname:  # if not a message from current user
                 msg_box.append(put_markdown(f"`{m[0]}`: {m[1]}"))
 
-        # remove expired messages
+        # Remove expired messages
         if len(chat_msgs) > MAX_MESSAGES_COUNT:
             chat_msgs = chat_msgs[len(chat_msgs) // 2:]
 
@@ -76,3 +81,5 @@ def index():
 
 if __name__ == "__main__":
     app.run(debug=False)
+
+Найти еще
