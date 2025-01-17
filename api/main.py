@@ -1,21 +1,30 @@
 import asyncio
+
 from flask import Flask
 from pywebio.platform.flask import webio_view
+
+
 from pywebio import start_server
 from pywebio.input import *
 from pywebio.output import *
 from pywebio.session import defer_call, info as session_info, run_async, run_js, set_env
+
 
 app = Flask(__name__)
 app.secret_key = '\x17\xdd\x86/\x023\xe2\x14\x15\x9c\x891\x8a\x81a\x8dO\x1b\xb6\x84\xf6\xd4'
 
 chat_msgs = []
 online_users = set()
+
 MAX_MESSAGES_COUNT = 100
+
+
 
 async def main():
     global chat_msgs
-    set_env(title="Just chatting", output_animation=False)
+
+    set_env(title="Just chating", output_animation=False)
+
     put_markdown("## Добро пожаловать в Mernogan chat")
 
     msg_box = output()
@@ -51,6 +60,7 @@ async def main():
 
     put_buttons(['Перезайти'], onclick=lambda btn: run_js('window.location.reload()'))
 
+
 async def refresh_msg(nickname, msg_box):
     global chat_msgs
     last_idx = len(chat_msgs)
@@ -68,5 +78,9 @@ async def refresh_msg(nickname, msg_box):
 
         last_idx = len(chat_msgs)
 
+
+app.add_url_rule('/', 'webio_view', webio_view(main),methods=['GET','POST'])
+
 if __name__ == "__main__":
-    start_server(main, port=8080, debug=False)
+    #start_server(main, debug=False)
+    app.run(debug=False)
