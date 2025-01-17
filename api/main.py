@@ -1,21 +1,30 @@
 import asyncio
+
 from flask import Flask
 from pywebio.platform.flask import webio_view
+
+
+from pywebio import start_server
 from pywebio.input import *
 from pywebio.output import *
-from pywebio.session import run_async, set_env
+from pywebio.session import defer_call, info as session_info, run_async, run_js, set_env
+
 
 app = Flask(__name__)
 app.secret_key = '\x17\xdd\x86/\x023\xe2\x14\x15\x9c\x891\x8a\x81a\x8dO\x1b\xb6\x84\xf6\xd4'
 
 chat_msgs = []
 online_users = set()
+
 MAX_MESSAGES_COUNT = 100
+
+
 
 async def main():
     global chat_msgs
 
-    set_env(title="Just chatting", output_animation=False)
+    set_env(title="Just chating", output_animation=False)
+
     put_markdown("## Добро пожаловать в Mernogan chat")
 
     msg_box = output()
@@ -30,33 +39,27 @@ async def main():
 
     refresh_task = run_async(refresh_msg(nickname, msg_box))
 
-    try:
-        while True:
-            data = await input_group("Новое сообщение", [
-                input(placeholder="Сообщение", name="msg"),
-                actions(name="cmd", buttons=["Отправить", {'label': "Выход из чата", 'type': 'cancel'}])
-            ], validate=lambda m: ('msg', "Введите текст сообщения") if m["cmd"] == "Отправить" and not m['msg'] else None)
+    while True:
+        data = await input_group("Новое сообщение", [
+            input(placeholder="Сообщение", name="msg"),
+            actions(name="cmd", buttons=["Отправить", {'label': "Выход из чата", 'type': 'cancel'}])
+        ], validate=lambda m: ('msg', "Введите текст сообщения") if m["cmd"] == "Отправить" and not m['msg'] else None)
 
-            if data is None:
-                break
+        if data is None:
+            break
 
-            msg_box.append(put_markdown(f"`{nickname}`: {data['msg']}"))
-            chat_msgs.append((nickname, data['msg']))
+        msg_box.append(put_markdown(f"`{nickname}`: {data['msg']}"))
+        chat_msgs.append((nickname, data['msg']))
 
-    finally:
-        # Cancel the refresh task
-        refresh_task.cancel()
-        try:
-            await refresh_task  # Await cancellation
-        except asyncio.CancelledError:
-            pass  # Handle the cancellation gracefully
+    refresh_task.close()
 
-        online_users.remove(nickname)
-        toast("Вы покинули чат")
-        msg_box.append(put_markdown(f'Пользователь `{nickname}` покинул чат!'))
-        chat_msgs.append(('Объявление', f'Пользователь `{nickname}` покинул чат!'))
+    online_users.remove(nickname)
+    toast("Вы покинули чат")
+    msg_box.append(put_markdown(f'Пользователь `{nickname}` покинул чат!'))
+    chat_msgs.append(('Объявление', f'Пользователь `{nickname}` покинул чат!'))
 
-        put_buttons(['Перезайти'], onclick=lambda btn: run_js('window.location.reload()'))
+    put_buttons(['Перезайти'], onclick=lambda btn: run_js('window.location.reload()'))
+
 
 async def refresh_msg(nickname, msg_box):
     global chat_msgs
@@ -69,17 +72,15 @@ async def refresh_msg(nickname, msg_box):
             if m[0] != nickname:  # if not a message from current user
                 msg_box.append(put_markdown(f"`{m[0]}`: {m[1]}"))
 
-        # Remove expired messages
+        # remove expired
         if len(chat_msgs) > MAX_MESSAGES_COUNT:
             chat_msgs = chat_msgs[len(chat_msgs) // 2:]
 
         last_idx = len(chat_msgs)
 
-@app.route('/')
-def index():
-    return webio_view(main)()
+
+app.add_url_rule('/', 'webio_view', webio_view(main),methods=['GET','POST'])
 
 if __name__ == "__main__":
+    #start_server(main, debug=False)
     app.run(debug=False)
-
-Найти еще
