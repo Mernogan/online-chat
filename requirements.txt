@@ -1,0 +1,7 @@
+click==8.1.8
+Flask==3.1.0
+pyinstaller==6.11.1
+pyinstaller-hooks-contrib==2024.11
+pyparsing==3.2.1
+pywebio==1.8.3
+tornado==6.4.2
